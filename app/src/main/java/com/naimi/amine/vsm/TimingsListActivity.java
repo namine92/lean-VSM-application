@@ -41,6 +41,7 @@ public class TimingsListActivity extends AppCompatActivity {
     AlertDialog addTimingDialogue;
     FloatingActionButton addTimingBtn;
     Spinner pdcSpinner;
+    Spinner perteSpinner;
     long timeWhenStopped;
 
     @Override
@@ -63,8 +64,6 @@ public class TimingsListActivity extends AppCompatActivity {
     }
 
     void addTimeStamp() {
-
-
 
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -114,20 +113,33 @@ public class TimingsListActivity extends AppCompatActivity {
                     @Override
                     public void onClick(View view) {
                         // add the timing
+                        String perte = "NA";
+
+                        long time = Math.abs(timeWhenStopped);
 
 
-                        long timeStamp = Math.abs(timeWhenStopped);
+                        if (time == 0)
+                            Toast.makeText(TimingsListActivity.this, "Le chronometrage ne doit pas etre null", Toast.LENGTH_SHORT).show();
+                        else {
+                            if (pdcSpinner.getSelectedItem().toString().equals("Machine"))
+                                Toast.makeText(TimingsListActivity.this, "Vous devez selectionner une machine", Toast.LENGTH_SHORT).show();
+
+                            else {
+                                if (!pdcSpinner.getSelectedItem().toString().equals("Perte"))
+                                    perte = pdcSpinner.getSelectedItem().toString();
 
 
+                                TimingContents.addItem(new Timing("", time, perte, "id", pdcSpinner.getSelectedItem().toString(), ""));
 
-                        TimingContents.addItem(new Timing("", timeStamp, "VA", "", "", ""));
-                        tmAdpt.update(TimingContents.ITEMS);
+                                tmAdpt.update(TimingContents.ITEMS);
 
 
-                        Toast.makeText(TimingsListActivity.this, "" + timeStamp, Toast.LENGTH_SHORT).show();
+                                Toast.makeText(TimingsListActivity.this, "" + time, Toast.LENGTH_SHORT).show();
 
-                        timeWhenStopped = 0;
-                        dialog.dismiss();
+                                timeWhenStopped = 0;
+                                dialog.dismiss();
+                            }
+                        }
 
                     }
                 });
@@ -137,8 +149,11 @@ public class TimingsListActivity extends AppCompatActivity {
 
         pdcSpinner = (Spinner) layout.findViewById(R.id.pdc_spin);
 
+        perteSpinner = (Spinner) layout.findViewById(R.id.perte_spin);
 
         //initilizePDCSpinner(PDCContents.ITEMS);
+
+        initilizePerteSpinner();
 
         Call<List<PDC>> call = ProjectApi.getInstance().getProcessServ().getProcessPDCs(
                 DataUtil.getCurrentProcessID(TimingsListActivity.this));
@@ -224,6 +239,45 @@ public class TimingsListActivity extends AppCompatActivity {
 
         pdcSpinner.setAdapter(adapter);
         pdcSpinner.setSelection(adapter.getCount()); //display hint
+
+
+        // You can create an anonymous listener to handle the event when is selected an spinner item
+    }
+
+
+    private void initilizePerteSpinner() {
+
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item) {
+
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+
+                View v = super.getView(position, convertView, parent);
+                if (position == getCount()) {
+                    ((TextView) v.findViewById(android.R.id.text1)).setText("");
+                    ((TextView) v.findViewById(android.R.id.text1)).setHint(getItem(getCount())); //"Hint to be displayed"
+                }
+
+                return v;
+            }
+
+            @Override
+            public int getCount() {
+                return super.getCount() - 1; // you dont display last item. It is used as hint.
+            }
+
+        };
+
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        adapter.add("NA");
+        adapter.add("VA");
+
+        adapter.add("Perte");
+
+        perteSpinner.setAdapter(adapter);
+        perteSpinner.setSelection(adapter.getCount()); //display hint
 
 
         // You can create an anonymous listener to handle the event when is selected an spinner item

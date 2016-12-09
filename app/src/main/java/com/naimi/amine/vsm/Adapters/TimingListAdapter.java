@@ -54,8 +54,8 @@ public class TimingListAdapter extends BaseAdapter {
 
         final Timing time = (Timing) getItem(position);
 
-        ((TextView) convertView.findViewById(R.id.PDC_title)).setText(time.productId);
-        ((TextView) convertView.findViewById(R.id.timing_info)).setText("" + time.time);
+        ((TextView) convertView.findViewById(R.id.PDC_title)).setText(time.cycleId);
+        ((TextView) convertView.findViewById(R.id.timing_info)).setText("" + time.getTime());
 
 
         return convertView;

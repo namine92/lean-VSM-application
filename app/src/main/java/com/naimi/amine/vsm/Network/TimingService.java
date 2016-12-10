@@ -23,7 +23,7 @@ public interface TimingService {
 
 
 
-    @POST("/Timings/")
+    @POST("Timings/")
     @FormUrlEncoded
     public Call<Timing> addTiming(@Field("timeStamp") String timeStamp, @Field("time")  int time,
                                       @Field("type")  String type, @Field("productId")  String productId,

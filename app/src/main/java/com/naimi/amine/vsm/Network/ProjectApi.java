@@ -17,6 +17,7 @@ public class ProjectApi {
     ProcessService processServ;
     ProductService productServ;
     TimingService timingServ;
+   CycleService cycleServ;
     /**
      * Returns the instance of this singleton.
      */
@@ -35,6 +36,7 @@ public class ProjectApi {
         productServ = retrofit.create(ProductService.class);
 
         timingServ = retrofit.create(TimingService.class);
+        cycleServ = retrofit.create(CycleService.class);
 
     }
 
@@ -60,9 +62,13 @@ public class ProjectApi {
     public ProductService getProductServ() {
         return productServ;
     }
-    public TimingService gettimingServ() {
+    public TimingService getTimingServ() {
         return timingServ;
     }
+    public CycleService getCycleServ() {
+        return cycleServ;
+    }
+
 
 
 

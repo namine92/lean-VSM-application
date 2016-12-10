@@ -9,7 +9,7 @@
         android:id="@+id/send_to_server"
         android:orderInCategory="100"
         android:icon="@drawable/ic_check_white_24dp"
-        android:showAsAction="ifRoom"
+        android:showAsAction="always"
         android:title="Valider"/>
 
 </menu>

@@ -48,7 +48,7 @@ public class ProcessListActivity extends AppCompatActivity {
                         @Override
                         public void onItemClick(AdapterView<?> arg0, View arg1, int position, long arg3) {
                             DataUtil.setCurrentProcessID(ProcessListActivity.this, processAdpt.getProcessIDbyPosition(position));
-                            Toast.makeText(ProcessListActivity.this, "" + processAdpt.getProcessIDbyPosition(position), Toast.LENGTH_SHORT).show();
+                           // Toast.makeText(ProcessListActivity.this, "" + processAdpt.getProcessIDbyPosition(position), Toast.LENGTH_SHORT).show();
                             Intent i = new Intent(ProcessListActivity.this, ProductListActivity.class);
                             startActivity(i);
                         }

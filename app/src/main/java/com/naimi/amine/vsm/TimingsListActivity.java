@@ -8,6 +8,8 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -21,13 +23,19 @@ import android.widget.Toast;
 
 import com.naimi.amine.vsm.Adapters.TimingListAdapter;
 import com.naimi.amine.vsm.Models.PDCContents;
+import com.naimi.amine.vsm.Models.Pojo.DetailsResponse;
+import com.naimi.amine.vsm.Models.Pojo.EagerCycle;
 import com.naimi.amine.vsm.Models.Pojo.IndusProcess;
 import com.naimi.amine.vsm.Models.Pojo.PDC;
 import com.naimi.amine.vsm.Models.Pojo.Timing;
 import com.naimi.amine.vsm.Models.TimingContents;
 import com.naimi.amine.vsm.Network.ProjectApi;
+import com.naimi.amine.vsm.Network.TimingService;
 import com.naimi.amine.vsm.Util.DataUtil;
+import com.naimi.amine.vsm.Util.DateUtil;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import retrofit2.Call;
@@ -43,11 +51,18 @@ public class TimingsListActivity extends AppCompatActivity {
     Spinner pdcSpinner;
     Spinner perteSpinner;
     long timeWhenStopped;
+    List<EagerCycle> detailsCycleList = new ArrayList<>();
+
+    Boolean pauseChrono = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_timing_list);
+
+
+        getSupportActionBar().setTitle("Chrono: " + DataUtil.getCurrentProcessID(this) + "/"+
+        DataUtil.getCurrentProductID(this));
 
         timingList = (ListView) findViewById(R.id.timing_list);
         addTimingBtn = (FloatingActionButton) findViewById(R.id.add_timing);
@@ -61,6 +76,72 @@ public class TimingsListActivity extends AppCompatActivity {
         });
         timingList.setAdapter(tmAdpt);
 
+
+        Call<DetailsResponse> detailCall = ProjectApi.getInstance().getCycleServ().getCycle();
+        detailCall.enqueue(new Callback<DetailsResponse>() {
+            @Override
+            public void onResponse(Call<DetailsResponse> call, Response<DetailsResponse> response) {
+
+                if (response.body() != null) {
+                    detailsCycleList = response.body().cycles;
+
+                   // Toast.makeText(TimingsListActivity.this, "" + detailsCycleList.size(), Toast.LENGTH_SHORT).show();
+                }
+
+            }
+
+            @Override
+            public void onFailure(Call<DetailsResponse> call, Throwable t) {
+
+            }
+        });
+
+    }
+
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_timing, menu);//Menu Resource, Menu
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.send_to_server:
+
+                TimingService tServ = ProjectApi.getInstance().getTimingServ();
+
+
+                for (Timing t : TimingContents.ITEMS) {
+                    Call<Timing> call = tServ.addTiming(DateUtil.formatDate(new Date()), (int) t.time, t.type,
+                            DataUtil.getCurrentProductID(TimingsListActivity.this),
+                            getCycleIdByProcessAndPdc(DataUtil.getCurrentProcessID(TimingsListActivity.this), t.cycleId)
+
+                    );
+
+                    call.enqueue(new Callback<Timing>() {
+                        @Override
+                        public void onResponse(Call<Timing> call, Response<Timing> response) {
+
+                            TimingContents.ITEMS.clear();
+                            tmAdpt.update(TimingContents.ITEMS);
+
+                        }
+
+                        @Override
+                        public void onFailure(Call<Timing> call, Throwable t) {
+
+                        }
+                    });
+
+                }
+
+
+                return true;
+
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     void addTimeStamp() {
@@ -125,19 +206,24 @@ public class TimingsListActivity extends AppCompatActivity {
                                 Toast.makeText(TimingsListActivity.this, "Vous devez selectionner une machine", Toast.LENGTH_SHORT).show();
 
                             else {
-                                if (!pdcSpinner.getSelectedItem().toString().equals("Perte"))
-                                    perte = pdcSpinner.getSelectedItem().toString();
+                                if (!pauseChrono)
+                                    Toast.makeText(TimingsListActivity.this, "Vous devez arreter le chrono pour enregistrer", Toast.LENGTH_SHORT).show();
+
+                                else {
+                                    if (!pdcSpinner.getSelectedItem().toString().equals("Perte"))
+                                        perte = pdcSpinner.getSelectedItem().toString();
 
 
-                                TimingContents.addItem(new Timing("", time, perte, "id", pdcSpinner.getSelectedItem().toString(), ""));
+                                    TimingContents.addItem(new Timing("", time, perte, "id", pdcSpinner.getSelectedItem().toString(), ""));
 
-                                tmAdpt.update(TimingContents.ITEMS);
+                                    tmAdpt.update(TimingContents.ITEMS);
 
 
-                                Toast.makeText(TimingsListActivity.this, "" + time, Toast.LENGTH_SHORT).show();
+                                    //Toast.makeText(TimingsListActivity.this, "" + time, Toast.LENGTH_SHORT).show();
 
-                                timeWhenStopped = 0;
-                                dialog.dismiss();
+                                    timeWhenStopped = 0;
+                                    dialog.dismiss();
+                                }
                             }
                         }
 
@@ -178,6 +264,8 @@ public class TimingsListActivity extends AppCompatActivity {
 
                 chrono.setBase(SystemClock.elapsedRealtime() + timeWhenStopped);
                 chrono.start();
+
+                pauseChrono = false;
             }
         });
 
@@ -187,6 +275,7 @@ public class TimingsListActivity extends AppCompatActivity {
             public void onClick(View view) {
                 timeWhenStopped = chrono.getBase() - SystemClock.elapsedRealtime();
                 chrono.stop();
+                pauseChrono = true;
             }
         });
 
@@ -196,6 +285,7 @@ public class TimingsListActivity extends AppCompatActivity {
                 chrono.stop();
                 chrono.setBase(SystemClock.elapsedRealtime());
                 timeWhenStopped = 0;
+                pauseChrono = true;
 
 
             }
@@ -232,7 +322,7 @@ public class TimingsListActivity extends AppCompatActivity {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
         for (PDC pdc : pdcList)
-            adapter.add(pdc.label);
+            adapter.add(pdc.reference);
 
 
         adapter.add("Machine");
@@ -284,4 +374,12 @@ public class TimingsListActivity extends AppCompatActivity {
     }
 
 
+    String getCycleIdByProcessAndPdc(String processId, String PDCId) {
+
+        for (EagerCycle egC : detailsCycleList)
+            if (egC.processId.equals(processId) && egC.pdcId.equals(PDCId))
+                return egC.id;
+
+        return "";
+    }
 }
